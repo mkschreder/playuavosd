@@ -18,6 +18,9 @@
  * With Grateful Acknowledgements to the projects:
  * Tau Labs - Brain FPV Flight Controller(https://github.com/BrainFPV/TauLabs)
  */
+#include <string.h>
+#include <math.h>
+
 #include "graphengine.h"
 #include "osdcore.h"
 #include "fonts.h"
@@ -589,7 +592,7 @@ void write_circle_filled(uint8_t *buff, int cx, int cy, int r, int mode)
 void write_line(uint8_t *buff, int x0, int y0, int x1, int y1, int mode)
 {
 	// Based on http://en.wikipedia.org/wiki/Bresenham%27s_line_algorithm
-	int steep = abs(y1 - y0) > abs(x1 - x0);
+	int steep = fabs(y1 - y0) > fabs(x1 - x0);
 
 	if (steep) {
 		SWAP(x0, y0);
@@ -600,7 +603,7 @@ void write_line(uint8_t *buff, int x0, int y0, int x1, int y1, int mode)
 		SWAP(y0, y1);
 	}
 	int deltax     = x1 - x0;
-	int deltay = abs(y1 - y0);
+	int deltay = fabs(y1 - y0);
 	int error      = deltax / 2;
 	int ystep;
 	int y = y0;
@@ -667,7 +670,7 @@ void write_line_outlined(int x0, int y0, int x1, int y1,
 		omode = 1;
 		imode = 0;
 	}
-	int steep = abs(y1 - y0) > abs(x1 - x0);
+	int steep = fabs(y1 - y0) > fabs(x1 - x0);
 	if (steep) {
 		SWAP(x0, y0);
 		SWAP(x1, y1);
@@ -677,7 +680,7 @@ void write_line_outlined(int x0, int y0, int x1, int y1,
 		SWAP(y0, y1);
 	}
 	int deltax     = x1 - x0;
-	int deltay = abs(y1 - y0);
+	int deltay = fabs(y1 - y0);
 	int error      = deltax / 2;
 	int ystep;
 	int y = y0;
@@ -750,8 +753,8 @@ void write_line_outlined2(int x0, int y0, int x1, int y1,
 	}
 	
 	
-	int dx = abs(x1 - x0);
-    int dy = abs(y1 - y0);
+	int dx = fabs(x1 - x0);
+    int dy = fabs(y1 - y0);
     int sx, sy;
     int err;
     int e2;
@@ -817,7 +820,7 @@ void write_line_outlined_dashed(int x0, int y0, int x1, int y1,
 		omode = 1;
 		imode = 0;
 	}
-	int steep = abs(y1 - y0) > abs(x1 - x0);
+	int steep = fabs(y1 - y0) > fabs(x1 - x0);
 	if (steep) {
 		SWAP(x0, y0);
 		SWAP(x1, y1);
@@ -827,7 +830,7 @@ void write_line_outlined_dashed(int x0, int y0, int x1, int y1,
 		SWAP(y0, y1);
 	}
 	int deltax = x1 - x0;
-	int deltay = abs(y1 - y0);
+	int deltay = fabs(y1 - y0);
 	int error  = deltax / 2;
 	int ystep;
 	int y = y0;

@@ -1,7 +1,9 @@
 #ifndef GRAPH_ENGINE_H__
 #define GRAPH_ENGINE_H__
 
-#include "board.h"
+#include <stdint.h>
+
+//#include "board.h"
 #include "fonts.h"
 
 // Size of an array (num items.)

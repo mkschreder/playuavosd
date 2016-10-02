@@ -1,8 +1,8 @@
 #ifndef OSD_CORE_H__
 #define OSD_CORE_H__
 
-#include "stm32f4xx_conf.h"
-#include "stm32f4xx.h"
+//#include "stm32f4xx_conf.h"
+//#include "stm32f4xx.h"
 
 // PAL/NTSC specific boundary values
 struct pios_video_type_boundary {
@@ -20,16 +20,8 @@ struct pios_video_type_cfg {
 	uint8_t  dc;
 };
 
-struct pios_osd_bw_cfg_t {
-	TIM_TimeBaseInitTypeDef tim_base_init;
-	TIM_OCInitTypeDef tim_oc_init;
-	GPIO_InitTypeDef gpio_init;
-	uint32_t remap;
-	const struct pios_tim_channel * bw_channels;
-};
-
 //extern OS_FlagID osdUpdateFlag;
-extern u8 OSD_need_update;
+extern uint8_t OSD_need_update;
 
 //extern void OSD_configure_bw_levels(void);
 //extern void PWM_Output(void);

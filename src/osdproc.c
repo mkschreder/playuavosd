@@ -23,9 +23,7 @@
 #include "osdcore.h"
 #include "osdvar.h"
 #include "fonts.h"
-#include "UAVObj.h"
 #include "osdconfig.h"
-#include "osdmavlink.h"
 #include "math3d.h"
 
 #define HUD_VSCALE_FLAG_CLEAR       1
@@ -160,9 +158,6 @@ bool bShownAtPanle(uint16_t itemPanel)
 
 void vTaskOSD(void *pvParameters)
 {
-    uav3D_init();
-    uav2D_init();
-
     osdVideoSetXOffset(osd_offset_X);
     osdVideoSetYOffset(osd_offset_Y);
 
@@ -194,6 +189,11 @@ void RenderScreen(void)
     if(current_panel > eeprom_buffer.params.Max_panels)
         current_panel = 1;
 
+	sprintf(tmp_str, "Hello World!"); 
+	write_string(tmp_str, 10, 10, 0, 0, TEXT_VA_TOP, TEXT_HA_LEFT, 0, 2); 
+
+	write_line_lm(10, 15, 20, 20, 1, 1);
+#if 0
     // mode
     if (eeprom_buffer.params.FlightMode_en==1 && bShownAtPanle(eeprom_buffer.params.FlightMode_panel)) {
         draw_flight_mode(eeprom_buffer.params.FlightMode_posX,
@@ -613,8 +613,9 @@ void RenderScreen(void)
 
     //warnning - should be displayed lastly in case not be covered by others
     hud_draw_warnning();
+#endif
 }
-
+#if 0
 void draw_flight_mode(int x, int y, int xs, int ys, int va, int ha, int flags, int font)
 {
     char* mode_str = "unknown";
@@ -1628,4 +1629,4 @@ void DJI_test(void)
 
     hud_draw_linear_compass(osd_heading, osd_home_bearing, 120, 180, GRAPHICS_X_MIDDLE, GRAPHICS_Y_MIDDLE+80, 15, 30, 5, 8, 0);
 }
-
+#endif

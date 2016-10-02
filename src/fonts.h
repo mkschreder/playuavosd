@@ -1,7 +1,7 @@
 #ifndef OSD_FONT_H__
 #define OSD_FONT_H__
 
-#include "board.h"
+//#include "board.h"
 
 // New fonts need a .c file (with the data) and a .h file with
 // the definitions. Add the .h files here only.

@@ -38,7 +38,7 @@ STM32_INCLUDES = -I$(STMLIBSDIR)/CMSIS/Include/ \
           		 -I$(USBDEVICELIB)/Core/inc    \
           		 -I$(USBHOSTLIB)/Core/inc    \
           		 -I$(USBOTGLIB)/inc    \
-				 -I./inc 
+				 -I./src 
 OPTIMIZE       = -Os
 
 CFLAGS	= $(MCFLAGS)  $(OPTIMIZE)  $(DEFS) -I./ -I./ $(STM32_INCLUDES)  -Wl,-T,./linker/stm32_flash.ld
@@ -56,12 +56,12 @@ STM32_USB_DEVICE_SRC =	$(USBDEVICELIB)/Class/cdc/src/usbd_cdc_core.c \
 
 ## list of APP files
 SRC  = ./src/main.c
-SRC += ./src/system_stm32f4xx.c
+#SRC += ./src/system_stm32f4xx.c
 SRC += ./src/stm32f4xx_it.c
 SRC += ./src/board.c
 SRC += ./src/led.c
 SRC += ./src/spi.c
-SRC += ./src/usart2.c
+SRC += ./src/uart.c
 SRC += ./src/osdvar.c
 SRC += ./src/font_outlined8x8.c
 SRC += ./src/font_outlined8x14.c
@@ -73,29 +73,26 @@ SRC += ./src/math3d.c
 SRC += ./src/max7456.c
 SRC += ./src/osdconfig.c
 SRC += ./src/osdcore.c
-SRC += ./src/osdmavlink.c
 SRC += ./src/osdproc.c
-SRC += ./src/UAVObj.c
-SRC += ./src/uavtalk.c
 SRC += ./src/usb_bsp.c
 SRC += ./src/usbd_cdc_vcp.c
 SRC += ./src/usbd_desc.c
 SRC += ./src/usbd_usr.c
 SRC += ./src/printf2.c
 ## used parts of the STM-Library
-SRC += $(STMSPSRCDDIR)/stm32f4xx_dma.c
-SRC += $(STMSPSRCDDIR)/stm32f4xx_exti.c
-SRC += $(STMSPSRCDDIR)/stm32f4xx_flash.c
-SRC += $(STMSPSRCDDIR)/stm32f4xx_gpio.c
-SRC += $(STMSPSRCDDIR)/stm32f4xx_syscfg.c
-SRC += $(STMSPSRCDDIR)/stm32f4xx_pwr.c
-SRC += $(STMSPSRCDDIR)/stm32f4xx_rcc.c
-SRC += $(STMSPSRCDDIR)/stm32f4xx_rtc.c
-SRC += $(STMSPSRCDDIR)/stm32f4xx_spi.c
-SRC += $(STMSPSRCDDIR)/stm32f4xx_tim.c
-SRC += $(STMSPSRCDDIR)/stm32f4xx_usart.c
-SRC += $(STMSPSRCDDIR)/stm32f4xx_can.c
-SRC += $(STMSPSRCDDIR)/misc.c
+#SRC += $(STMSPSRCDDIR)/stm32f4xx_dma.c
+#SRC += $(STMSPSRCDDIR)/stm32f4xx_exti.c
+#SRC += $(STMSPSRCDDIR)/stm32f4xx_flash.c
+#SRC += $(STMSPSRCDDIR)/stm32f4xx_gpio.c
+#SRC += $(STMSPSRCDDIR)/stm32f4xx_syscfg.c
+#SRC += $(STMSPSRCDDIR)/stm32f4xx_pwr.c
+#SRC += $(STMSPSRCDDIR)/stm32f4xx_rcc.c
+#SRC += $(STMSPSRCDDIR)/stm32f4xx_rtc.c
+#SRC += $(STMSPSRCDDIR)/stm32f4xx_spi.c
+#SRC += $(STMSPSRCDDIR)/stm32f4xx_tim.c
+#SRC += $(STMSPSRCDDIR)/stm32f4xx_usart.c
+#SRC += $(STMSPSRCDDIR)/stm32f4xx_can.c
+#SRC += $(STMSPSRCDDIR)/misc.c
 ## list of FreeRTOS files
 SRC += $(FREERTOSDIR)/portable/GCC/ARM_CM4F/port.c
 SRC += $(FREERTOSDIR)/portable/MemMang/heap_2.c
@@ -109,8 +106,7 @@ SRC += $(FREERTOSDIR)/timers.c
 SRC += $(STM32_USB_OTG_SRC)
 SRC += $(STM32_USB_DEVICE_SRC)
 # List ASM source files here
-STARTUP = ./$(STMLIBSDIR)/CMSIS/ST/STM32F4xx/Source/Templates/gcc_ride7/startup_stm32f40xx.s
-
+#STARTUP = ./$(STMLIBSDIR)/CMSIS/ST/STM32F4xx/Source/Templates/gcc_ride7/startup_stm32f40xx.s
 
 all: $(TARGETBIN) objcopy
 
@@ -118,10 +114,11 @@ $(TARGETBIN): $(EXECUTABLE)
 	$(BIN) $^ $@
 	
 $(EXECUTABLE): $(SRC) $(STARTUP)
-	$(CC) $(CFLAGS) $^ -lm -lc -lnosys -mthumb -mcpu=cortex-m4 -mfloat-abi=hard -mfpu=fpv4-sp-d16 -o $@
+	$(CC) $(CFLAGS) $^ -lstm32f4xx -lutype -lm -lc -lnosys -mthumb -mcpu=cortex-m4 -mfloat-abi=hard -mfpu=fpv4-sp-d16 -o $@
 
 objcopy:
-	@python -u px_mkfw.py --image $(TARGETBIN) > $(TARGETHEX)
+	arm-none-eabi-objcopy -O ihex $(EXECUTABLE) $(TARGETHEX)
+	rm $(EXECUTABLE)
 	
 clean:
 	rm -f $(TARGETBIN) $(EXECUTABLE) $(TARGETHEX) $(SRC:.c=.lst)

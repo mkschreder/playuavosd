@@ -28,7 +28,7 @@
 
 #include "FreeRTOS.h"
 #include "semphr.h"
-
+#include "board.h"
 #include "osdcore.h"
 #include "graphengine.h"
 
@@ -38,6 +38,14 @@ extern xSemaphoreHandle onScreenDisplaySemaphore;
 u8 OSD_need_update = 0;
 // How many frames until we redraw
 #define VSYNC_REDRAW_CNT 2
+
+struct pios_osd_bw_cfg_t {
+	TIM_TimeBaseInitTypeDef tim_base_init;
+	TIM_OCInitTypeDef tim_oc_init;
+	GPIO_InitTypeDef gpio_init;
+	uint32_t remap;
+	const struct pios_tim_channel * bw_channels;
+};
 
 static const struct pios_video_type_boundary pios_video_type_boundary_ntsc = {
 	.graphics_right  = 351,         // must be: graphics_width_real - 1

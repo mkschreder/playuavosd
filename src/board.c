@@ -17,12 +17,10 @@
 #include "board.h"
 
 #include "led.h"
-#include "uavtalk.h"
 #include "osdproc.h"
 #include "osdcore.h"
-#include "osdmavlink.h"
 #include "max7456.h"
-#include "usart2.h"
+#include "uart.h"
 #include "osdconfig.h"
 #include "math3d.h"
 #include "osdvar.h"
@@ -148,6 +146,7 @@ void module_init(void)
 	xTaskCreate( vTaskVCP, (const char*)"Task VCP",
 	STACK_SIZE_MIN*2, NULL, THREAD_PRIO_NORMAL, &xTaskVCPHandle );
 
+	#if 0
 	switch(eeprom_buffer.params.FC_Protocol){
 		case PROTOCOL_MAVLINK:
 			xTaskCreate( MavlinkTask, (const char*)"Task Mavlink",
@@ -160,7 +159,7 @@ void module_init(void)
 		default:
 			break;
 	}
-
+	#endif
 
 //	xTaskCreate( DJICanTask, (const char*)"DJI CAN",
 //	STACK_SIZE_MIN, NULL, THREAD_PRIO_HIGH, NULL );
@@ -200,35 +199,7 @@ void vTask10HZ(void *pvParameters)
             }
 
             //if no mavlink update for 2 secs, show waring and request mavlink rate again
-            if(GetSystimeMS() > (lastMAVBeat + 2200))
-            {
-                heatbeat_start_time = 0;
-                waitingMAVBeats = 1;
-            }
-
-            if(enable_mav_request == 1)
-            {
-                for(int n = 0; n < 3; n++){
-                    request_mavlink_rates();//Three times to certify it will be readed
-                    vTaskDelay(50/portTICK_RATE_MS);
-                }
-                enable_mav_request = 0;
-                waitingMAVBeats = 0;
-                lastMAVBeat = GetSystimeMS();
-            }
-            
-            if(enable_mission_count_request == 1)
-            {
-                request_mission_count();
-                enable_mission_count_request = 0;
-            }
-
-            if(enable_mission_item_request == 1)
-            {
-                request_mission_item(current_mission_item_req_index);
-            }
-
-        }
+     }
 }
 
 void triggerVideo(void)
