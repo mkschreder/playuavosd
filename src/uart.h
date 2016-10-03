@@ -4,7 +4,7 @@
 #include "board.h"
 
 void 	uart_init(uint32_t baudRate);
-int		uart_get(void); 
+int16_t	uart_get(void); 
 void 	uart_put(uint8_t ch);
 
 #endif //__USART2_H

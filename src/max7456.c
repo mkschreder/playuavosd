@@ -22,8 +22,7 @@ u8 	max7456_startCol = 0;
 u8 	max7456_startRow = 0;
 u8 	max7456_col = 0;
 u8 	max7456_row = 0;
-u8 	max7456_videoMode = 0;
-
+u8 	max7456_videoMode = 1;
 
 void SPI_MAX7456_init(void)
 {	
@@ -34,8 +33,9 @@ void SPI_MAX7456_init(void)
  	MAX7456_CS_HIGH();
 
 	SPI1_Init();
-	
-	SPI_MAX7456_setMode((int)eeprom_buffer.params.video_mode);
+
+	// force pal
+	SPI_MAX7456_setMode(1); //(int)eeprom_buffer.params.video_mode);
 	
 	MAX7456_CS_LOW();
 

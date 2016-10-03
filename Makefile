@@ -16,7 +16,7 @@ BIN  = $(CP) -O binary -S
 DEFS = -DUSE_STDPERIPH_DRIVER -DSTM32F4XX -DHSE_VALUE=8000000
 
 MCU = cortex-m4
-MCFLAGS = -mcpu=$(MCU) -mthumb -mfpu=fpv4-sp-d16 -mfloat-abi=hard -std=gnu99
+MCFLAGS = -mcpu=$(MCU) -mthumb -mfpu=fpv4-sp-d16 -mfloat-abi=hard -std=gnu99 -ffunction-sections
 STMLIBSDIR    = ./lib/STM32F4-Discovery_FW_V1.1.0/Libraries
 STMSPDDIR    = $(STMLIBSDIR)/STM32F4xx_StdPeriph_Driver
 STMSPSRCDDIR = $(STMSPDDIR)/src
@@ -28,17 +28,29 @@ USBDEVICELIB = $(STMLIBSDIR)/STM32_USB_Device_Library
 USBHOSTLIB = $(STMLIBSDIR)/STM32_USB_HOST_Library
 MAVLINKDIR = ./lib/mavlink/v1.0
 
-STM32_INCLUDES = -I$(STMLIBSDIR)/CMSIS/Include/ \
-				 -I$(STMLIBSDIR)/CMSIS/ST/STM32F4xx/Include/ \
-				 -I$(STMSPINCDDIR)/ \
-				 -I$(FREERTOSDIR)/include    \
-          		 -I$(FREERTOSDIR)/portable/GCC/ARM_CM4F    \
-          		 -I$(MAVLINKDIR)    \
-          		 -I$(USBDEVICELIB)/Class/cdc/inc    \
-          		 -I$(USBDEVICELIB)/Core/inc    \
-          		 -I$(USBHOSTLIB)/Core/inc    \
-          		 -I$(USBOTGLIB)/inc    \
-				 -I./src 
+#STM32_INCLUDES = -I$(STMLIBSDIR)/CMSIS/Include/ \
+#				 -I$(STMLIBSDIR)/CMSIS/ST/STM32F4xx/Include/ \
+#				 -I$(STMSPINCDDIR)/ \
+#				 -I$(FREERTOSDIR)/include    \
+#         		 -I$(FREERTOSDIR)/portable/GCC/ARM_CM4F    \
+#          		 -I$(MAVLINKDIR)    \
+#          		 -I$(USBDEVICELIB)/Class/cdc/inc    \
+#          		 -I$(USBDEVICELIB)/Core/inc    \
+#          		 -I$(USBHOSTLIB)/Core/inc    \
+#          		 -I$(USBOTGLIB)/inc    \
+#				 -I./src 
+
+STM32_INCLUDES = \
+	-Ilibstm32/src/f4xx/\
+	-Ilibstm32/src/CMSIS/\
+	-I$(FREERTOSDIR)/include    \
+	-I$(FREERTOSDIR)/portable/GCC/ARM_CM4F    \
+	-I$(USBDEVICELIB)/Class/cdc/inc    \
+	-I$(USBDEVICELIB)/Core/inc    \
+	-I$(USBHOSTLIB)/Core/inc    \
+	-I$(USBOTGLIB)/inc    \
+	-I./src 
+
 OPTIMIZE       = -Os
 
 CFLAGS	= $(MCFLAGS)  $(OPTIMIZE)  $(DEFS) -I./ -I./ $(STM32_INCLUDES)  -Wl,-T,./linker/stm32_flash.ld
@@ -71,6 +83,7 @@ SRC += ./src/m2dlib.c
 SRC += ./src/m3dlib.c
 SRC += ./src/math3d.c
 SRC += ./src/max7456.c
+SRC += ./src/osd_proto.c
 SRC += ./src/osdconfig.c
 SRC += ./src/osdcore.c
 SRC += ./src/osdproc.c
@@ -114,7 +127,7 @@ $(TARGETBIN): $(EXECUTABLE)
 	$(BIN) $^ $@
 	
 $(EXECUTABLE): $(SRC) $(STARTUP)
-	$(CC) $(CFLAGS) $^ -lstm32f4xx -lutype -lm -lc -lnosys -mthumb -mcpu=cortex-m4 -mfloat-abi=hard -mfpu=fpv4-sp-d16 -o $@
+	$(CC) $(CFLAGS) $^ -Wl,--gc-sections -lstm32f4xx -lutype -lm -lc -lnosys -mthumb -mcpu=cortex-m4 -mfloat-abi=hard -mfpu=fpv4-sp-d16 -o $@
 
 objcopy:
 	arm-none-eabi-objcopy -O ihex $(EXECUTABLE) $(TARGETHEX)

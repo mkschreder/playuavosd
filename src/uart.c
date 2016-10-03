@@ -24,7 +24,7 @@ struct stm32_uart {
 	char rx_data[32]; 
 }; 
 
-struct stm32_uart uart3; 
+static struct stm32_uart uart3; 
 
 // USART3 - MAVLINK (RX - IRQ, TX - IRQ)
 void uart_init(uint32_t baudRate)
@@ -69,26 +69,29 @@ void uart_init(uint32_t baudRate)
     USART_Cmd(USART3, ENABLE);
 }
 
+#include "led.h"
+
 // USART3 Rx IRQ Handler
 void USART3_IRQHandler(void)
 {
-	static portBASE_TYPE xHigherPriorityTaskWoken = pdFALSE;
+	//static portBASE_TYPE xHigherPriorityTaskWoken = pdFALSE;
+	LEDToggle(LED_BLUE); 
 
-	uint16_t SR = USART3->SR;
-
-	if (SR & USART_FLAG_RXNE) {
-        cbuf_put(&uart3.rx_buf, USART3->DR);
+	if (USART_GetITStatus(USART3, USART_IT_RXNE) != RESET) {
+        cbuf_put(&uart3.rx_buf, USART_ReceiveData(USART3));
     }
 	
-	portEND_SWITCHING_ISR(xHigherPriorityTaskWoken);
+	//portEND_SWITCHING_ISR(xHigherPriorityTaskWoken);
 }
 
-int uart_get(void){
-	return cbuf_get(&uart3.rx_buf); 
+int16_t uart_get(void){
+	int16_t ch = cbuf_get(&uart3.rx_buf); 
+	if((ch & 0xff00) != 0) return -1; 
+	return ch; 
 }
 
 void uart_put(u8 ch){
-	while (USART_GetFlagStatus(USART3, USART_FLAG_TC) == RESET){}
+	while(USART_GetFlagStatus(USART3, USART_FLAG_TXE) == RESET){}
 	USART_SendData(USART3, (u8) ch);
 }
 

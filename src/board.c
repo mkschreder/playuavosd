@@ -130,6 +130,13 @@ void board_init(void)
     atti_3d_max_clipX = eeprom_buffer.params.Atti_mp_posX + (uint32_t)(22*atti_mp_scale);
     atti_3d_min_clipY = eeprom_buffer.params.Atti_mp_posY - (uint32_t)(30*atti_mp_scale);
     atti_3d_max_clipY = eeprom_buffer.params.Atti_mp_posY + (uint32_t)(34*atti_mp_scale);
+
+	uart_init(57600); 
+	const char *str = "PLAYUAV\n"; 
+	size_t len = strlen(str); 
+	for(int c = 0; c < len; c++){
+		uart_put(str[c]); 
+	}
 }
 
 void module_init(void)

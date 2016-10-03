@@ -3,7 +3,7 @@ set -e
 TOOLCHAIN_PREFIX=$(dirname $(dirname $(which arm-none-eabi-gcc))) 
 CONFIGURE_FLAGS=
 
-export CFLAGS="-mthumb -mcpu=cortex-m4 -mfloat-abi=hard -mfpu=fpv4-sp-d16 -nostartfiles -DUSE_STDPERIPH_DRIVER" 
+export CFLAGS="-mthumb -mcpu=cortex-m4 -mfloat-abi=hard -mfpu=fpv4-sp-d16 -nostartfiles -DUSE_STDPERIPH_DRIVER -DHSE_VALUE=8000000 -ffunction-sections" 
 export LDFLAGS="" 
 
 echo "Using toolchain prefix: ${TOOLCHAIN_PREFIX}"
