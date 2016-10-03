@@ -68,7 +68,6 @@ STM32_USB_DEVICE_SRC =	$(USBDEVICELIB)/Class/cdc/src/usbd_cdc_core.c \
 
 ## list of APP files
 SRC  = ./src/main.c
-#SRC += ./src/system_stm32f4xx.c
 SRC += ./src/stm32f4xx_it.c
 SRC += ./src/board.c
 SRC += ./src/led.c
@@ -79,19 +78,16 @@ SRC += ./src/font_outlined8x8.c
 SRC += ./src/font_outlined8x14.c
 SRC += ./src/fonts.c
 SRC += ./src/graphengine.c
-SRC += ./src/m2dlib.c
-SRC += ./src/m3dlib.c
-SRC += ./src/math3d.c
 SRC += ./src/max7456.c
 SRC += ./src/osd_proto.c
 SRC += ./src/osdconfig.c
-SRC += ./src/osdcore.c
 SRC += ./src/osdproc.c
 SRC += ./src/usb_bsp.c
 SRC += ./src/usbd_cdc_vcp.c
 SRC += ./src/usbd_desc.c
 SRC += ./src/usbd_usr.c
-SRC += ./src/printf2.c
+SRC += ./src/syscalls.c
+SRC += ./src/video.c
 ## used parts of the STM-Library
 #SRC += $(STMSPSRCDDIR)/stm32f4xx_dma.c
 #SRC += $(STMSPSRCDDIR)/stm32f4xx_exti.c

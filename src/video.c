@@ -29,7 +29,7 @@
 #include "FreeRTOS.h"
 #include "semphr.h"
 #include "board.h"
-#include "osdcore.h"
+#include "video.h"
 #include "graphengine.h"
 
 extern xSemaphoreHandle onScreenDisplaySemaphore;
@@ -153,7 +153,7 @@ static int32_t actual_osd_end_line = 0;
 static void swap_buffers(void);
 static void prepare_line(void);
 
-void osdCoreInit(void)
+void video_init(void)
 {
     GPIO_InitTypeDef gpio;
     TIM_TimeBaseInitTypeDef tim;
@@ -673,12 +673,12 @@ static inline void prepare_line(void)
     OSD_LEVEL_DMA->CR |= (uint32_t) DMA_SxCR_EN;
 }
 
-uint16_t osdVideoGetLines(void)
+uint16_t video_get_lines_count(void)
 {
 	return num_video_lines;
 }
 
-uint16_t osdVideoGetType(void)
+uint16_t video_get_type(void)
 {
 	return video_type_act;
 }
@@ -686,7 +686,7 @@ uint16_t osdVideoGetType(void)
 /**
 *  Set the offset in x direction
 */
-void osdVideoSetXOffset(int8_t x_offset_in)
+void video_set_x_offset(int8_t x_offset_in)
 {
 	if (x_offset_in > 20)
 		x_offset_in = 20;
@@ -699,7 +699,7 @@ void osdVideoSetXOffset(int8_t x_offset_in)
 /**
 *  Set the offset in y direction
 */
-void osdVideoSetYOffset(int8_t y_offset_in)
+void video_set_y_offset(int8_t y_offset_in)
 {
 	if (y_offset_in > 20)
 		y_offset_in = 20;

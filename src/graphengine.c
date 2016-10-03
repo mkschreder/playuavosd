@@ -22,7 +22,7 @@
 #include <math.h>
 
 #include "graphengine.h"
-#include "osdcore.h"
+#include "video.h"
 #include "fonts.h"
 #include "font12x18.h"
 #include "font8x10.h"

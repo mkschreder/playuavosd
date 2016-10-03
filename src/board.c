@@ -18,11 +18,10 @@
 
 #include "led.h"
 #include "osdproc.h"
-#include "osdcore.h"
+#include "video.h"
 #include "max7456.h"
 #include "uart.h"
 #include "osdconfig.h"
-#include "math3d.h"
 #include "osdvar.h"
 
 void vTaskHeartBeat(void *pvParameters);
@@ -102,9 +101,6 @@ void board_init(void)
 	GPIO_Init(GPIOA, &gpio);
 	GPIO_SetBits(GPIOA,GPIO_Pin_15);
 
-    Build_Sin_Cos_Tables();
-    
-    
     bool force_clear_params = false;
     force_clear_params = test_force_clear_all_params();
     if(force_clear_params)

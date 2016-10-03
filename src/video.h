@@ -25,15 +25,15 @@ extern uint8_t OSD_need_update;
 
 //extern void OSD_configure_bw_levels(void);
 //extern void PWM_Output(void);
-extern void osdCoreInit(void);
+extern void video_init(void);
 
 //extern void osdVideoSetLevels(uint8_t, uint8_t, uint8_t, uint8_t);
-extern void osdVideoSetXOffset(int8_t);
-extern void osdVideoSetYOffset(int8_t);
+extern void video_set_x_offset(int8_t);
+extern void video_set_y_offset(int8_t);
 
-extern uint16_t osdVideoGetLines(void);
-extern uint16_t osdVideoGetType(void);
-extern void set_bw_levels(uint8_t black, uint8_t white);
+extern uint16_t video_get_lines_count(void);
+extern uint16_t video_get_type(void);
+extern void video_set_bw_levels(uint8_t black, uint8_t white);
 
 
 // video boundary values
