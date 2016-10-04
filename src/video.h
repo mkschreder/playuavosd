@@ -34,7 +34,8 @@ extern void video_set_y_offset(int8_t);
 extern uint16_t video_get_lines_count(void);
 extern uint16_t video_get_type(void);
 extern void video_set_bw_levels(uint8_t black, uint8_t white);
-
+void video_get_screen_size(uint16_t *x, uint16_t *y); 
+void video_wait_vsync(); 
 
 // video boundary values
 extern const struct pios_video_type_boundary *pios_video_type_boundary_act;

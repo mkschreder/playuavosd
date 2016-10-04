@@ -16,7 +16,6 @@
 
 #include "max7456.h" 
 #include "spi.h"
-#include "osdconfig.h"
 
 u8 	max7456_startCol = 0;
 u8 	max7456_startRow = 0;
@@ -66,9 +65,6 @@ void SPI_MAX7456_init(void)
 	// making sure the Max7456 is enabled
 	SPI_MAX7456_control(1);	
 	SPI_MAX7456_clear();
-	
-	
-	
 }  
 
 void SPI_MAX7456_control(u8 ctrl)

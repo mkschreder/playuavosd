@@ -88,7 +88,9 @@ enum FC_Protocol
 #define PIOS_IRQ_PRIO_HIGHEST			4               // for USART etc...
 
 void board_init(void);
-void module_init(void);
+
+void vTaskHeartBeat(void *); 
+void vTask10HZ(void *); 
 
 uint32_t GetSystimeMS(void);	//return the current system time
 

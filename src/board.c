@@ -17,12 +17,10 @@
 #include "board.h"
 
 #include "led.h"
-#include "osdproc.h"
+#include "osd_display.h"
 #include "video.h"
 #include "max7456.h"
 #include "uart.h"
-#include "osdconfig.h"
-#include "osdvar.h"
 
 void vTaskHeartBeat(void *pvParameters);
 void vTask10HZ(void *pvParameters);
@@ -32,12 +30,17 @@ void checkDefaultParam(void);
 
 uint8_t video_switch=0;
 
-xTaskHandle xTaskVCPHandle;
-
 int32_t pwmPanelNormal = 0;
 
-void board_init(void)
-{
+/* coprocessor control register (fpu) */
+#ifndef SCB_CPACR
+#define SCB_CPACR (*((uint32_t*) (((0xE000E000UL) + 0x0D00UL) + 0x088)))
+#endif
+
+void board_init(void){
+	/* enable FPU on Cortex-M4F core */
+    SCB_CPACR |= ((3UL << 10 * 2) | (3UL << 11 * 2)); /* set CP10 Full Access and set CP11 Full Access */
+
 	GPIO_InitTypeDef  gpio;
 	SystemCoreClockUpdate( );
 
@@ -64,10 +67,14 @@ void board_init(void)
 	gpio.GPIO_PuPd = GPIO_PuPd_UP;
 	gpio.GPIO_Speed = GPIO_Speed_100MHz;
 	GPIO_Init(GPIOC, &gpio);
+
+	// select video
 	GPIO_SetBits(GPIOC, GPIO_Pin_0);
+
 	gpio.GPIO_Pin = GPIO_Pin_1;
 	gpio.GPIO_PuPd = GPIO_PuPd_DOWN;
 	GPIO_Init(GPIOC, &gpio);
+
 	GPIO_ResetBits(GPIOC, GPIO_Pin_1);
 
 	//SPI1 output to electronic switch to control mask
@@ -99,8 +106,9 @@ void board_init(void)
 	gpio.GPIO_Speed = GPIO_Speed_50MHz;
 	gpio.GPIO_PuPd = GPIO_PuPd_NOPULL;
 	GPIO_Init(GPIOA, &gpio);
-	GPIO_SetBits(GPIOA,GPIO_Pin_15);
+	GPIO_SetBits(GPIOA, GPIO_Pin_15);
 
+#if 0
     bool force_clear_params = false;
     force_clear_params = test_force_clear_all_params();
     if(force_clear_params)
@@ -110,62 +118,19 @@ void board_init(void)
     
     LoadParams();
     checkDefaultParam();
+#endif
+
     SPI_MAX7456_init();
     
+	uart_init(57600); 
+
     //fabs, make sure not broken the VBI
-    osd_offset_Y = fabs(eeprom_buffer.params.osd_offsetY);
+    /*osd_offset_Y = fabs(eeprom_buffer.params.osd_offsetY);
 
     osd_offset_X = eeprom_buffer.params.osd_offsetX;
     if(eeprom_buffer.params.osd_offsetX_sign == 0){
         osd_offset_X = osd_offset_X * -1;
-    }
-
-    atti_mp_scale = (float)eeprom_buffer.params.Atti_mp_scale_real + (float)eeprom_buffer.params.Atti_mp_scale_frac * 0.01;
-    atti_3d_scale = (float)eeprom_buffer.params.Atti_3D_scale_real + (float)eeprom_buffer.params.Atti_3D_scale_frac * 0.01;
-    atti_3d_min_clipX = eeprom_buffer.params.Atti_mp_posX - (uint32_t)(22*atti_mp_scale);
-    atti_3d_max_clipX = eeprom_buffer.params.Atti_mp_posX + (uint32_t)(22*atti_mp_scale);
-    atti_3d_min_clipY = eeprom_buffer.params.Atti_mp_posY - (uint32_t)(30*atti_mp_scale);
-    atti_3d_max_clipY = eeprom_buffer.params.Atti_mp_posY + (uint32_t)(34*atti_mp_scale);
-
-	uart_init(57600); 
-	const char *str = "PLAYUAV\n"; 
-	size_t len = strlen(str); 
-	for(int c = 0; c < len; c++){
-		uart_put(str[c]); 
-	}
-}
-
-void module_init(void)
-{
-	xTaskCreate( vTaskHeartBeat, (const char*)"Task Heartbeat",
-		STACK_SIZE_MIN, NULL, THREAD_PRIO_LOW, NULL );
-
-	xTaskCreate( vTask10HZ, (const char*)"Task 10HZ",
-		STACK_SIZE_MIN, NULL, THREAD_PRIO_NORMAL, NULL );
-
-	xTaskCreate( vTaskOSD, (const char*)"Task OSD",
-		STACK_SIZE_MIN*2, NULL, THREAD_PRIO_HIGHEST, NULL );
-
-	xTaskCreate( vTaskVCP, (const char*)"Task VCP",
-	STACK_SIZE_MIN*2, NULL, THREAD_PRIO_NORMAL, &xTaskVCPHandle );
-
-	#if 0
-	switch(eeprom_buffer.params.FC_Protocol){
-		case PROTOCOL_MAVLINK:
-			xTaskCreate( MavlinkTask, (const char*)"Task Mavlink",
-						 STACK_SIZE_MIN*2, NULL, THREAD_PRIO_HIGH, NULL );
-			break;
-		case PROTOCOL_UAVTALK:
-			xTaskCreate( UAVTalkTask, (const char*)"Task UAVTalk",
-						 STACK_SIZE_MIN*2, NULL, THREAD_PRIO_HIGH, NULL );
-			break;
-		default:
-			break;
-	}
-	#endif
-
-//	xTaskCreate( DJICanTask, (const char*)"DJI CAN",
-//	STACK_SIZE_MIN, NULL, THREAD_PRIO_HIGH, NULL );
+    }*/
 }
 
 void vTaskHeartBeat(void *pvParameters)
@@ -177,6 +142,7 @@ void vTaskHeartBeat(void *pvParameters)
 	}
 }
 
+#if 0
 void vTask10HZ(void *pvParameters)
 {
     for(;;)
@@ -281,6 +247,7 @@ void triggerPanel(void)
 		panel_trigger = false;
 	}
 }
+#endif
 
 uint32_t GetSystimeMS(void)
 {
@@ -307,6 +274,7 @@ void Delay_us(u32 nus)
 	}
 }
 
+#if 0
 void checkDefaultParam()
 {
     bool bNeedUpdateFlash = false;
@@ -454,16 +422,19 @@ bool test_force_clear_all_params(void)
 			samples++;
 		}
 	}
-    
-    /* revert the driver pin */
+   
+   // revert driver pin
     gpio.GPIO_Pin = GPIO_Pin_10;
     gpio.GPIO_Mode = GPIO_Mode_IN;
 	gpio.GPIO_PuPd = GPIO_PuPd_NOPULL;
 	GPIO_Init(GPIOB, &gpio);
     
-    /* the idea here is to reject wire-to-wire coupling, so require > 90% agreement */
+    // the idea here is to reject wire-to-wire coupling, so require > 90% agreement 
 	if ((vote * 100) > (samples * 90))
 		return true;
     
     return false;
 }
+
+#endif
+

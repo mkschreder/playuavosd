@@ -15,33 +15,32 @@
  */
 
 #include "board.h"
+#include "osd_display.h"
+#include "osd_usb.h"
+#include "osd_uart.h"
 
 uint64_t u64Ticks=0;        // Counts OS ticks (default = 1000Hz).
 uint64_t u64IdleTicks=0;    // Value of u64IdleTicksCnt is copied once per sec.
 uint64_t u64IdleTicksCnt=0; // Counts when the OS has no task to execute.
 bool stackOverflow = false;
 
-xSemaphoreHandle onScreenDisplaySemaphore;
-xSemaphoreHandle onMavlinkSemaphore;
-xSemaphoreHandle onUAVTalkSemaphore;
+int main(void){
+   	board_init();
 
-/* coprocessor control register (fpu) */
-#ifndef SCB_CPACR
-#define SCB_CPACR (*((uint32_t*) (((0xE000E000UL) + 0x0D00UL) + 0x088)))
-#endif
+	xTaskCreate( vTaskHeartBeat, (const char*)"Task Heartbeat",
+		STACK_SIZE_MIN, NULL, THREAD_PRIO_LOW, NULL );
 
-int main(void)
-{
-    /* enable FPU on Cortex-M4F core */
-    SCB_CPACR |= ((3UL << 10 * 2) | (3UL << 11 * 2)); /* set CP10 Full Access and set CP11 Full Access */
+	//xTaskCreate( vTask10HZ, (const char*)"Task 10HZ",
+	//	STACK_SIZE_MIN, NULL, THREAD_PRIO_NORMAL, NULL );
 
+	xTaskCreate( vTaskDisplay, (const char*)"Task Display",
+		STACK_SIZE_MIN*2, NULL, THREAD_PRIO_HIGHEST, NULL );
 
-	vSemaphoreCreateBinary(onScreenDisplaySemaphore);
-	vSemaphoreCreateBinary(onMavlinkSemaphore);
-	vSemaphoreCreateBinary(onUAVTalkSemaphore);
+	xTaskCreate( vTaskUART, (const char*)"Task PROTO",
+		STACK_SIZE_MIN, NULL, THREAD_PRIO_NORMAL, NULL );
 
-	board_init();
-	module_init();
+	xTaskCreate( vTaskUSB, (const char*)"Task USB",
+			STACK_SIZE_MIN*2, NULL, THREAD_PRIO_LOW, NULL );
 
 	vTaskStartScheduler();
 }

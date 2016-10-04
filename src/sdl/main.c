@@ -9,7 +9,7 @@
 #include <xv11/xv11_tty.h>
 
 #include "../graphengine.h"
-#include "../osdcore.h"
+#include "../video.h"
 #include "../osd_proto.h" 
 
 static SDL_Surface *sdl_screen = 0; 

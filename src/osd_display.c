@@ -17,25 +17,24 @@
  * With Grateful Acknowledgements to the projects:
  * Tau Labs - Brain FPV Flight Controller(https://github.com/BrainFPV/TauLabs)
  */
-#include "osdproc.h"
+#include "osd_display.h"
 #include "graphengine.h"
 #include "led.h"
 #include "video.h"
-#include "osdvar.h"
 #include "fonts.h"
-#include "osdconfig.h"
 #include "osd_proto.h"
 #include "uart.h"
 
 extern uint8_t *draw_buffer_level;
 extern uint8_t *draw_buffer_mask;
 
-extern xSemaphoreHandle onScreenDisplaySemaphore;
+xSemaphoreHandle osd_sem;
+struct osd_proto proto; 
 
 struct osd_state {
 	int16_t vbat; 
 	bool 	scan; 
-	uint16_t radar[360]; 
+	int16_t radar[360]; 
 } state; 
 
 static void _proto_on_rr(struct osd_proto *self, uint16_t deg, uint16_t distance){
@@ -58,19 +57,25 @@ struct osd_proto_callbacks _osd_procs = {
 
 static void _render_screen(void){
 	// TODO: remove and replace with the proper pal size
-	const uint16_t SCREEN_WIDTH = 359; 
-	const uint16_t SCREEN_HEIGHT = 265; 
+	uint16_t width; 
+	uint16_t height; 
 
-	uint16_t half_x = SCREEN_WIDTH >> 1; 
-	uint16_t half_y = SCREEN_HEIGHT >> 1; 
+	video_get_screen_size(&width, &height); 
+
+	uint16_t half_x = width >> 1; 
+	uint16_t half_y = height >> 1; 
 
 	static const float scale = 20.0f; 
 
-	char tmp_str[50] = {0}; 
-	sprintf(tmp_str, "Inkonova"); 
-	write_string(tmp_str, 295, 255, 0, 0, TEXT_VA_TOP, TEXT_HA_LEFT, 0, 2); 
+	//char tmp_str[50] = {0}; 
+	//sprintf(tmp_str, "Inkonova"); 
+	//write_string(tmp_str, 295, 255, 0, 0, TEXT_VA_TOP, TEXT_HA_LEFT, 0, 2); 
 
-	write_line_lm(0, 253, 359, 253, 1, 1); 	
+	//write_line_lm(40, 123, 330, 123, 0, 0); 	
+	//write_line_lm(40, 133, 330, 133, 1, 0); 	
+
+	//write_line_lm(40, 143, 330, 143, 0, 1); 	
+	//write_line_lm(40, 153, 330, 153, 1, 1); 	
 	/*write_line_lm(55, 253, 55, 265, 1, 1); 	
 	write_line_lm(105, 253, 105, 265, 1, 1); 	
 	write_line_lm(155, 253, 155, 265, 1, 1); 	
@@ -89,7 +94,8 @@ static void _render_screen(void){
 	write_circle(draw_buffer_level, half_x, half_y, 1000.0f / scale, 10, 1); 
 	write_circle(draw_buffer_mask, half_x, half_y, 1000.0f / scale, 10, 1); 
 
-	for(int c = 1; c < 360; c++){            
+	for(int c = 0; c < 360; c++){
+		if(state.radar[c] <= 0) continue; 
 		uint16_t x = half_x + sin((c - 0) * M_PI / 180.0) * (float)state.radar[c] / scale;  
 		uint16_t y = half_y + cos((c - 0) * M_PI / 180.0) * (float)state.radar[c] / scale;  
 		write_pixel(draw_buffer_level, x, y, 1);
@@ -97,30 +103,35 @@ static void _render_screen(void){
 	}
 }
 
-void vTaskOSD(void *pvParameters){
-	video_set_x_offset(osd_offset_X);
-	video_set_y_offset(osd_offset_Y);
-
-	video_init();
-
-	struct osd_proto proto; 
+void vTaskDisplay(void *pvParameters){
+	memset(&state, 0, sizeof(state)); 
 
 	osd_proto_init(&proto, &_osd_procs); 
 
-	for(;;)
-	{
-		xSemaphoreTake(onScreenDisplaySemaphore, portMAX_DELAY);
-		
-		for(int c = 0; c < 16; c++){
-			int16_t ch = uart_get(); 
-			if(ch < 0) break; 
-			//uart_put(ch); 
-			osd_proto_process_byte(&proto, ch); 
-		}
+	vSemaphoreCreateBinary(osd_sem);
+
+	video_init();
+
+	for(;;){
+		video_wait_vsync(); 
+	
+		xSemaphoreTake(osd_sem, portMAX_DELAY); 
 
 		clearGraphics();
-
 		_render_screen();
+
+		xSemaphoreGive(osd_sem); 
 	}
+}
+
+void osd_display_process_proto_chunk(char *buf, size_t size){
+	if(!size) return; 
+
+	xSemaphoreTake(osd_sem, portMAX_DELAY);
+
+	if(size > 0)
+		osd_proto_process_chunk(&proto, buf, size); 
+
+	xSemaphoreGive(osd_sem);
 }
 

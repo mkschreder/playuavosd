@@ -32,7 +32,8 @@
 #include "video.h"
 #include "graphengine.h"
 
-extern xSemaphoreHandle onScreenDisplaySemaphore;
+// vsync 
+static xSemaphoreHandle onScreenDisplaySemaphore;
 
 //OS_FlagID osdUpdateFlag;
 u8 OSD_need_update = 0;
@@ -153,8 +154,12 @@ static int32_t actual_osd_end_line = 0;
 static void swap_buffers(void);
 static void prepare_line(void);
 
-void video_init(void)
-{
+void video_init(void){
+	vSemaphoreCreateBinary(onScreenDisplaySemaphore);
+
+	video_set_x_offset(0); 
+	video_set_y_offset(-20); 
+
     GPIO_InitTypeDef gpio;
     TIM_TimeBaseInitTypeDef tim;
     NVIC_InitTypeDef nvic;
@@ -309,11 +314,15 @@ void video_init(void)
     LINE_COUNTER_TIMER->CCMR2 = 0;
 
     // set up compare video row values for LINE_COUNTER compare irqs
+	// FIXME: redo this and take into account pal vs ntsc
+    LINE_COUNTER_TIMER->CCR1 = actual_osd_start_line;
+    LINE_COUNTER_TIMER->CCR2 = actual_osd_end_line;
+	#if 0
     LINE_COUNTER_TIMER->CCR1 = TELEM_START_LINE;
     LINE_COUNTER_TIMER->CCR2 = TELEM_START_LINE + TELEM_LINES;
     LINE_COUNTER_TIMER->CCR3 = actual_osd_start_line;
     LINE_COUNTER_TIMER->CCR4 = actual_osd_end_line;
-
+	#endif
     TIM_Cmd(LINE_COUNTER_TIMER, DISABLE);
 
     // init OSD mask SPI
@@ -448,7 +457,8 @@ void EXTI1_IRQHandler()
                 pios_video_type_cfg_act = &pios_video_type_cfg_pal;
             }
         }
-
+		
+		// FIXME: what is this?
         video_type_tmp = VIDEO_TYPE_NTSC;
 
         // Every VSYNC_REDRAW_CNT field: swap buffers and trigger redraw
@@ -459,11 +469,11 @@ void EXTI1_IRQHandler()
                     &xHigherPriorityTaskWoken);
         }
 
-        LINE_COUNTER_TIMER->SR = 0U;
-        // new frame so restart line count
-        LINE_COUNTER_TIMER->CNT = 0U;
-        // enable CCR1 interrupt ( start of telem rows)
-        LINE_COUNTER_TIMER->DIER = (1 << 1);
+        // reset the count
+		TIM_SetCounter(LINE_COUNTER_TIMER, 0U); 
+		// enable the first interrupt
+		TIM_ITConfig(LINE_COUNTER_TIMER, TIM_IT_CC1, ENABLE); 
+		// restart start the line counter timer
         TIM_Cmd(LINE_COUNTER_TIMER, ENABLE);
     }
 
@@ -476,6 +486,7 @@ void EXTI1_IRQHandler()
  */
 
 // called from LINE_COUNTER CCR1 irq
+/*
 static void start_telem_lines(void)
 {
     PIXEL_TIMER->CCR1 = pios_video_type_telem.dc;
@@ -501,8 +512,9 @@ static void end_telem_lines(void)
     // signal to DMA interrupt that we are done
     end_of_lines = true;
 }
-
+*/
 // called from LINE_COUNTER CCR3 irq
+/*
 static void start_osd_lines(void)
 {
     PIXEL_TIMER->CCR1 = pios_video_type_cfg_act->dc;
@@ -515,39 +527,56 @@ static void start_osd_lines(void)
     cur_trans_mode = trans_osd;
     active_line = 0;
     end_of_lines = 0;
+
+	// enable cc2 interupt for running the end call
+	TIM_ITConfig(LINE_COUNTER_TIMER, TIM_IT_CC2, ENABLE); 
+
     // disable CCR3 interrupt and enable CCR4 interrupt
-    LINE_COUNTER_TIMER->DIER = (1 << 4);
+    //LINE_COUNTER_TIMER->DIER = (1 << 4);
     prepare_line();
 }
 
 // called from LINE_COUNTER CCR4 irq
 static void end_osd_lines(void)
 {  
-    // disable CCR4 interrupt
-    LINE_COUNTER_TIMER->DIER = 0;
-    // signal to DMA interrupt that we are done
-    end_of_lines = true;
+    // disable CCR2 interrupt
 }
-
+*/
+// line counter timer 
 void TIM4_IRQHandler(void)
 {
-    uint16_t const tim_sr = LINE_COUNTER_TIMER->SR & (0xF << 1);
-    LINE_COUNTER_TIMER->SR = 0U;
-    if (tim_sr & (1 << 1)) {
-        start_telem_lines();
-    } else {
-        if (tim_sr & (1 << 2)) {
-            end_telem_lines();
-        } else {
-            if (tim_sr & (1 << 3)) {
-                start_osd_lines();
-            } else {
-                if (tim_sr & (1 << 4)) {
-                    end_osd_lines();
-                }
-            }
-        }
-    }
+	if (TIM_GetFlagStatus(LINE_COUNTER_TIMER, TIM_FLAG_CC1) != RESET) {
+		TIM_ClearFlag(LINE_COUNTER_TIMER, TIM_FLAG_CC1); 
+
+		PIXEL_TIMER->CCR1 = pios_video_type_cfg_act->dc;
+		PIXEL_TIMER->ARR = pios_video_type_cfg_act->period;
+		HSYNC_CAPTURE_TIMER->ARR = pios_video_type_cfg_act->dc
+				* (pios_video_type_cfg_act->graphics_column_start + x_offset);
+		SPI_CLOSE_DELAY_TIMER->CNT = 0;
+		SPI_CLOSE_DELAY_TIMER->ARR = (pios_video_type_cfg_act->period + 1) * 8;
+		SPI_CLOSE_DELAY_TIMER->SR = 0;
+		cur_trans_mode = trans_osd;
+		active_line = 0;
+		end_of_lines = 0;
+
+		// disable current interrupt and enable the next one
+		TIM_ITConfig(LINE_COUNTER_TIMER, TIM_IT_CC1, DISABLE); 
+		TIM_ITConfig(LINE_COUNTER_TIMER, TIM_IT_CC2, ENABLE); 
+
+		// disable CCR3 interrupt and enable CCR4 interrupt
+		prepare_line();
+    } else if(TIM_GetFlagStatus(LINE_COUNTER_TIMER, TIM_FLAG_CC2)) {
+		TIM_ClearFlag(LINE_COUNTER_TIMER, TIM_FLAG_CC2); 
+		
+		// disable all interrupts
+		//TIM_ITConfig(LINE_COUNTER_TIMER, TIM_IT_CC1, DISABLE); 
+		//TIM_ITConfig(LINE_COUNTER_TIMER, TIM_IT_CC2, DISABLE); 
+		LINE_COUNTER_TIMER->DIER = 0U; 
+
+    	// signal to DMA interrupt that we are done
+		// FIXME: wtf? 
+    	end_of_lines = true;
+	}
 }
 
 
@@ -637,6 +666,7 @@ static inline void prepare_line(void)
     DMA1 ->HIFCR |= DMA_FLAG_TCIF4 | DMA_FLAG_HTIF4 | DMA_FLAG_FEIF4
             | DMA_FLAG_TEIF4 | DMA_FLAG_DMEIF4;
     // Prepare next line DMA:
+	/*
     if (cur_trans_mode == trans_tele) {
         uint32_t const buf_offset = active_line * TELEM_BUFFER_WIDTH;
 
@@ -646,16 +676,17 @@ static inline void prepare_line(void)
         OSD_MASK_DMA->NDTR = (uint16_t) TELEM_BUFFER_WIDTH;
         OSD_LEVEL_DMA->NDTR = (uint16_t) TELEM_BUFFER_WIDTH;
     } else { // osd
-        uint32_t const buf_offset = active_line * BUFFER_WIDTH;
+	*/
+	uint32_t const buf_offset = active_line * BUFFER_WIDTH;
 
-        OSD_MASK_DMA->M0AR = (uint32_t) &disp_buffer_mask[buf_offset];
-        OSD_LEVEL_DMA->M0AR = (uint32_t) &disp_buffer_level[buf_offset];
+	OSD_MASK_DMA->M0AR = (uint32_t) &disp_buffer_mask[buf_offset];
+	OSD_LEVEL_DMA->M0AR = (uint32_t) &disp_buffer_level[buf_offset];
 
-        OSD_MASK_DMA->NDTR =
-                (uint16_t) pios_video_type_cfg_act->dma_buffer_length;
-        OSD_LEVEL_DMA->NDTR =
-                (uint16_t) pios_video_type_cfg_act->dma_buffer_length;
-    }
+	OSD_MASK_DMA->NDTR =
+			(uint16_t) pios_video_type_cfg_act->dma_buffer_length;
+	OSD_LEVEL_DMA->NDTR =
+			(uint16_t) pios_video_type_cfg_act->dma_buffer_length;
+    //}
     // Advance line counter
     ++active_line;
     // Stop pixel timer
@@ -710,3 +741,13 @@ void video_set_y_offset(int8_t y_offset_in)
 	actual_osd_start_line = pios_video_type_cfg_act->graphics_line_start + y_offset;
 	actual_osd_end_line = pios_video_type_cfg_act->graphics_line_start + y_offset + pios_video_type_cfg_act->graphics_hight_real;
 }
+
+void video_get_screen_size(uint16_t *x, uint16_t *y){
+	*x = pios_video_type_boundary_act->graphics_right + 1; 
+	*y = pios_video_type_boundary_act->graphics_bottom + 1; 
+}
+
+void video_wait_vsync(){
+	xSemaphoreTake(onScreenDisplaySemaphore, portMAX_DELAY);
+}
+

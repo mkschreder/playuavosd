@@ -37,7 +37,6 @@ void LEDInit(Led_TypeDef Led)
   GPIO_Init(GPIO_PORT[Led], &GPIO_InitStructure);
 }
 
-
 void LEDOn(Led_TypeDef Led)
 {
   GPIO_PORT[Led]->BSRRH = GPIO_PIN[Led];
