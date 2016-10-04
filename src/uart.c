@@ -14,14 +14,16 @@
  * 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
  */
 
+#include <errno.h>
 #include <utype/cbuf.h>
 
 #include "uart.h"
-#include "osdconfig.h"
 
 struct stm32_uart {
 	struct cbuf rx_buf; 
 	char rx_data[32]; 
+
+	xSemaphoreHandle rx_sem;
 }; 
 
 static struct stm32_uart uart3; 
@@ -35,6 +37,8 @@ void uart_init(uint32_t baudRate)
 
 	memset(uart3.rx_data, 0, sizeof(uart3.rx_data)); 
 	cbuf_init(&uart3.rx_buf, uart3.rx_data, sizeof(uart3.rx_data)); 
+
+	vSemaphoreCreateBinary(uart3.rx_sem);
 	
     RCC_APB1PeriphClockCmd(RCC_APB1Periph_USART3, ENABLE);
     // USART3_TX    PB10
@@ -67,27 +71,56 @@ void uart_init(uint32_t baudRate)
     USART_Init(USART3, &USART_InitStructure);
 	USART_ITConfig(USART3, USART_IT_RXNE, ENABLE);
     USART_Cmd(USART3, ENABLE);
+
+	// init the uart led (on playuav we use the "blue" led
+	/*
+	GPIO_InitTypeDef  gpio_led;
+	RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_GPIOC, ENABLE);
+	gpio_led.GPIO_Pin = GPIO_Pin_5;
+	gpio_led.GPIO_Mode = GPIO_Mode_OUT;
+	gpio_led.GPIO_OType = GPIO_OType_PP;
+	gpio_led.GPIO_PuPd = GPIO_PuPd_NOPULL;
+	gpio_led.GPIO_Speed = GPIO_Speed_50MHz;
+	GPIO_Init(GPIOC, &gpio_led);
+	*/
+}
+/*
+static void _led_on(void){
+	GPIOC->BSRRH = GPIO_Pin_5;
 }
 
-#include "led.h"
-
+static void _led_off(void){
+	GPIOC->BSRRL = GPIO_Pin_5;
+}
+*/
 // USART3 Rx IRQ Handler
-void USART3_IRQHandler(void)
-{
-	//static portBASE_TYPE xHigherPriorityTaskWoken = pdFALSE;
-	LEDToggle(LED_BLUE); 
+void USART3_IRQHandler(void){
+	static portBASE_TYPE xHigherPriorityTaskWoken = pdFALSE;
 
 	if (USART_GetITStatus(USART3, USART_IT_RXNE) != RESET) {
-        cbuf_put(&uart3.rx_buf, USART_ReceiveData(USART3));
+		cbuf_put(&uart3.rx_buf, USART_ReceiveData(USART3));
+
+		xSemaphoreGiveFromISR(uart3.rx_sem, &xHigherPriorityTaskWoken);
     }
 	
-	//portEND_SWITCHING_ISR(xHigherPriorityTaskWoken);
+	portEND_SWITCHING_ISR(xHigherPriorityTaskWoken);
 }
 
-int16_t uart_get(void){
-	int16_t ch = cbuf_get(&uart3.rx_buf); 
-	if((ch & 0xff00) != 0) return -1; 
-	return ch; 
+int uart_read(char *data, size_t size){
+	// wait for at least one data byte to be available
+	xSemaphoreTake(uart3.rx_sem, portMAX_DELAY);
+
+	if(cbuf_empty(&uart3.rx_buf)) return -EAGAIN; 
+
+	size_t c = 0; 
+	for(c = 0; c < size; c++){
+		int16_t d = cbuf_get(&uart3.rx_buf); 
+		if((d & 0xff00) != 0) break; 
+
+		*data = d & 0xff; 
+		data++; 
+	}
+	return c; 
 }
 
 void uart_put(u8 ch){
