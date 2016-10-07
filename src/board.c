@@ -122,7 +122,7 @@ void board_init(void){
 
     SPI_MAX7456_init();
     
-	uart_init(57600); 
+	uart_init(115200); 
 
     //fabs, make sure not broken the VBI
     /*osd_offset_Y = fabs(eeprom_buffer.params.osd_offsetY);

@@ -17,9 +17,9 @@ static int _osd_proto_process_cmd(struct osd_proto *self) {
 		char *deg_str = strtok_r(NULL, " ", &save); 
 		char *dis_str = strtok_r(NULL, " ", &save); 
 		if(!deg_str || !dis_str) goto done; 
-		printf("%s %s\n", deg_str, dis_str); 
-		uint16_t deg = atoi(deg_str); 
-		uint16_t dis = atoi(dis_str); 
+		//printf("%s %s\n", deg_str, dis_str); 
+		int16_t deg = atoi(deg_str); 
+		int16_t dis = atoi(dis_str); 
 		self->cb->on_rr(self, deg, dis); 
 	} else if(self->cb->on_vbat && strcmp(cmd, "VBAT") == 0){
 		char *v_str = strtok_r(NULL, " ", &save); 

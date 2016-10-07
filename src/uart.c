@@ -21,7 +21,7 @@
 
 struct stm32_uart {
 	struct cbuf rx_buf; 
-	char rx_data[32]; 
+	char rx_data[128]; 
 
 	xSemaphoreHandle rx_sem;
 }; 
