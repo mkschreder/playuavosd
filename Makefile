@@ -53,7 +53,7 @@ STM32_INCLUDES = \
 
 OPTIMIZE       = -Os
 
-CFLAGS	= $(MCFLAGS)  $(OPTIMIZE)  $(DEFS) -I./ -I./ $(STM32_INCLUDES)  -Wl,-T,./linker/stm32_flash.ld
+CFLAGS	= $(MCFLAGS)  $(OPTIMIZE)  $(DEFS) -I./ -I./staging_dir/include/ $(STM32_INCLUDES)  -Wl,-T,./linker/stm32_flash.ld
 AFLAGS	= $(MCFLAGS) 
 #-mapcs-float use float regs. small increase in code size
 
@@ -121,7 +121,7 @@ $(TARGETBIN): $(EXECUTABLE)
 	$(BIN) $^ $@
 	
 $(EXECUTABLE): $(SRC) $(STARTUP)
-	$(CC) $(CFLAGS) $^ -Wl,--gc-sections -lstm32f4xx -lutype -lm -lc -lnosys -mthumb -mcpu=cortex-m4 -mfloat-abi=hard -mfpu=fpv4-sp-d16 -o $@
+	$(CC) $(CFLAGS) $^ -Wl,--gc-sections -L./staging_dir/lib -lstm32f4xx -lutype -lm -lc -lnosys -mthumb -mcpu=cortex-m4 -mfloat-abi=hard -mfpu=fpv4-sp-d16 -o $@
 
 objcopy:
 	arm-none-eabi-objcopy -O ihex $(EXECUTABLE) $(TARGETHEX)
